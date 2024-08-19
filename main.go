@@ -6,26 +6,35 @@ import (
 	"net/http"
 )
 
-type User struct {
-	Id   string
-	Name string
-}
+func handleHelloWorld() http.HandlerFunc {
 
-func handleHelloWorld() http.Handler {
+	type User struct {
+		id   string
+		name string
+	}
+
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusCreated)
 			w.Header().Set("Content-Type", "application/json")
 
-			u := User{Id: "US123", Name: "John Doe"}
-			json.NewEncoder(w).Encode(u)
+			user := User{id: "123ABC", name: "John Doe"}
+			json.NewEncoder(w).Encode(user)
 
 		},
 	)
 }
 
+func loggerMiddleware(h http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Request Made")
+		h(w, r)
+	})
+}
+
 func addRoutes(mux *http.ServeMux) {
-	mux.Handle("POST /helloWorld", handleHelloWorld())
+	mux.Handle("POST /helloWorld", loggerMiddleware(handleHelloWorld()))
+
 	mux.Handle("/", http.NotFoundHandler())
 }
 
@@ -48,7 +57,7 @@ func main() {
 		Handler: srv,
 	}
 
-	fmt.Printf("Running Server On Port 8080")
+	fmt.Println("Running Server On Port 8080")
 
 	httpServer.ListenAndServe()
 }
