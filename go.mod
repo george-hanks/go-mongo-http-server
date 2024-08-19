@@ -1,3 +1,3 @@
-module go-http-server
+module main
 
 go 1.23.0
