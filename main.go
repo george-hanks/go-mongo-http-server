@@ -4,18 +4,24 @@ import (
 	"fmt"
 	"main/app"
 	"net/http"
+	"os"
 )
 
 func main() {
 
+	port, isSet := os.LookupEnv("PORT")
+	if !isSet {
+		panic("Missing PORT ENV variable")
+	}
+
 	srv := app.NewServer()
 
 	httpServer := &http.Server{
-		Addr:    ":8080",
+		Addr:    `:` + port,
 		Handler: srv,
 	}
 
-	fmt.Println("Running Server On Port 8080")
+	fmt.Println("Running Server On Port " + port)
 
 	httpServer.ListenAndServe()
 }
