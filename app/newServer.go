@@ -2,12 +2,14 @@ package app
 
 import (
 	"net/http"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewServer() http.Handler {
+func NewServer(usersCollection *mongo.Collection) http.Handler {
 	mux := http.NewServeMux()
 
-	addRoutes(mux)
+	addRoutes(mux, usersCollection)
 
 	var handler http.Handler = mux
 
