@@ -1,4 +1,4 @@
-module george-hanks/main
+module github.com/george-hanks/go-mongo-http-server
 
 go 1.23.0
 

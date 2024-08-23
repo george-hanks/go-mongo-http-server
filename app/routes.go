@@ -1,8 +1,9 @@
 package app
 
 import (
-	"george-hanks/main/app/handlers"
 	"net/http"
+
+	"github.com/george-hanks/go-mongo-http-server/app/handlers"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )

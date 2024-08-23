@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"george-hanks/main/app"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/george-hanks/go-mongo-http-server/app"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
