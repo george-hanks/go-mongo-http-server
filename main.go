@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,16 +12,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func main() {
-
+func run(logger *log.Logger) {
 	port := os.Getenv("PORT")
 	if port == "" {
-		log.Fatal("Missing PORT ENV variable")
+		logger.Fatal("Missing PORT ENV variable")
 	}
 
 	uri := os.Getenv("MONGO_URI")
 	if uri == "" {
-		log.Fatal("Missing MONG_DB_URI ENV variable")
+		logger.Fatal("Missing MONG_DB_URI ENV variable")
 	}
 
 	client, err := mongo.Connect(context.TODO(), options.Client().
@@ -38,7 +36,12 @@ func main() {
 		}
 	}()
 
-	usersCollection := client.Database("default").Collection("users")
+	err = client.Ping(context.TODO(), nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	usersCollection := client.Database("cyberpunk-red").Collection("users")
 
 	srv := app.NewServer(usersCollection)
 
@@ -47,7 +50,15 @@ func main() {
 		Handler: srv,
 	}
 
-	fmt.Println("Running Server On Port " + port)
+	logger.Println("Running Server On Port " + port)
 
 	httpServer.ListenAndServe()
+}
+
+func main() {
+
+	logger := log.New(os.Stdout, "[SERVER] ", log.LstdFlags)
+
+	run(logger)
+
 }

@@ -3,20 +3,24 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type User struct {
-	Id   string `bson:"_id"`
-	Name string `bson:"name"`
+	Id       primitive.ObjectID `bson:"_id"`
+	Name     string             `bson:"name"`
+	UserName string             `bson:"user_name"`
 }
 
 func GetUsers(usersCollection *mongo.Collection) http.HandlerFunc {
 
 	return http.HandlerFunc(
+
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 
@@ -46,6 +50,10 @@ func GetUser(usersCollection *mongo.Collection) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 
 			userId := r.PathValue("id")
+			id, errr := primitive.ObjectIDFromHex(userId)
+			if errr != nil {
+				log.Fatal("Can Parse ID")
+			}
 
 			if userId == "" {
 				w.WriteHeader(http.StatusBadRequest)
@@ -53,9 +61,9 @@ func GetUser(usersCollection *mongo.Collection) http.HandlerFunc {
 			}
 
 			var user User
-			err := usersCollection.FindOne(context.TODO(), bson.M{"_id": userId}).Decode(&user)
+			err := usersCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&user)
 			if err != nil {
-				json.NewEncoder(w).Encode([]string{})
+				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 
