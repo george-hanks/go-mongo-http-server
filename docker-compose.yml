@@ -1,15 +1,15 @@
 services:
-  # service:
-  #   container_name: go_service
-  #   image: go-server:latest
-  #   restart: always
-  #   environment:
-  #     PORT: 80
-  #     MONGO_URI: mongodb://root:root@localhost:27017/
-  #   ports:
-  #     - 80:80
-  #   depends_on:
-  #     - mongo
+  service:
+    container_name: go_service
+    image: go-server:latest
+    restart: always
+    environment:
+      PORT: 80
+      MONGO_URI: mongodb://root:root@mongo:27017/
+    ports:
+      - 80:80
+    depends_on:
+      - mongo
   mongo:
     container_name: mongodb
     image: mongo:latest

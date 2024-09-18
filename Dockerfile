@@ -1,25 +1,24 @@
-FROM golang
+ARG  BUILDER_IMAGE=golang
+FROM ${BUILDER_IMAGE} AS builder
 
 # Set destination for COPY
-WORKDIR /app
+WORKDIR $GOPATH/src/app/
 
 # Download Go modules
 COPY go.mod ./
 RUN go mod download
 
-# Copy the source code. Note the slash at the end, as explained in
-# https://docs.docker.com/reference/dockerfile/#copy
 COPY . ./
 
-# Build
-RUN CGO_ENABLED=0 GOOS=linux go build
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -o /go/bin/app .
 
-# Optional:
-# To bind to a TCP port, runtime parameters must be supplied to the docker command.
-# But we can document in the Dockerfile what ports
-# the application is going to listen on by default.
-# https://docs.docker.com/reference/dockerfile/#expose
+FROM scratch
 EXPOSE 8080
 
-# Run
-CMD ["/go-mongo-http-server"]
+# Copy our static executable
+COPY --from=builder /go/bin/app /go/bin/app
+
+# Run the app binary.
+CMD ["/go/bin/app"]

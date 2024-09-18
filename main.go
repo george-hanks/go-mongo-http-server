@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"sync"
+	"time"
 
 	"github.com/george-hanks/go-mongo-http-server/app"
 
@@ -12,18 +16,23 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func run(logger *log.Logger) {
+func run(ctx context.Context) error {
+
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+
 	port := os.Getenv("PORT")
 	if port == "" {
-		logger.Fatal("Missing PORT ENV variable")
+		log.Fatal("Missing PORT ENV variable")
 	}
 
 	uri := os.Getenv("MONGO_URI")
 	if uri == "" {
-		logger.Fatal("Missing MONG_DB_URI ENV variable")
+		log.Fatal("Missing MONG_DB_URI ENV variable")
 	}
 
-	client, err := mongo.Connect(context.TODO(), options.Client().
+	fmt.Println("Attempting To Connect To MongoDB")
+	client, err := mongo.Connect(ctx, options.Client().
 		ApplyURI(uri))
 
 	if err != nil {
@@ -31,12 +40,12 @@ func run(logger *log.Logger) {
 	}
 
 	defer func() {
-		if err := client.Disconnect(context.TODO()); err != nil {
+		if err := client.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
 
-	err = client.Ping(context.TODO(), nil)
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -50,15 +59,33 @@ func run(logger *log.Logger) {
 		Handler: srv,
 	}
 
-	logger.Println("Running Server On Port " + port)
+	go func() {
+		fmt.Println("Running Server On Port " + port)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Printf("Error listening and serving: %s\n", err)
+		}
+	}()
 
-	httpServer.ListenAndServe()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		shutdownCtx := context.Background()
+		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
+		defer cancel()
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
+		}
+	}()
+	wg.Wait()
+	return nil
 }
 
 func main() {
+	ctx := context.Background()
 
-	logger := log.New(os.Stdout, "[SERVER] ", log.LstdFlags)
-
-	run(logger)
-
+	if err := run(ctx); err != nil {
+		os.Exit(1)
+	}
 }
